@@ -28,7 +28,8 @@ private val tabs: List<Pair<String, ImageVector>> = listOf(
     "Inicio" to Icons.Filled.Home,
     "Movimientos" to Icons.AutoMirrored.Filled.List,
     "Presupuestos" to Icons.Filled.DateRange,
-    "Metas" to Icons.Filled.Star
+    "Metas" to Icons.Filled.Star,
+    "Más" to Icons.Filled.Menu
 )
 
 @Composable
@@ -71,7 +72,8 @@ fun AppRoot(vm: MainViewModel) {
                 0 -> HomeScreen(vm, ::openTx) { accountDialog = true }
                 1 -> TxScreen(vm, ::openTx) { txDialog = TxDialogState(TxType.valueOf(it.type), it) }
                 2 -> BudgetScreen(vm)
-                else -> GoalScreen(vm)
+                3 -> GoalScreen(vm)
+                else -> MoreScreen(vm)
             }
         }
     }
@@ -99,7 +101,7 @@ private fun StatCard(title: String, cents: Long, modifier: Modifier = Modifier, 
 }
 
 @Composable
-private fun EmptyState(title: String, body: String, action: String? = null, onAction: () -> Unit = {}) {
+internal fun EmptyState(title: String, body: String, action: String? = null, onAction: () -> Unit = {}) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -230,7 +232,7 @@ fun TxScreen(vm: MainViewModel, onNew: (TxType) -> Unit, onEdit: (TxEntity) -> U
 }
 
 @Composable
-private fun ConfirmDialog(title: String, body: String, onYes: () -> Unit, onNo: () -> Unit) {
+internal fun ConfirmDialog(title: String, body: String, onYes: () -> Unit, onNo: () -> Unit) {
     AlertDialog(
         onDismissRequest = onNo, title = { Text(title) }, text = { Text(body) },
         confirmButton = { TextButton(onClick = onYes) { Text("Eliminar") } },

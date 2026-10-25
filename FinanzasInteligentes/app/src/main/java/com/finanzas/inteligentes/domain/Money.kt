@@ -22,6 +22,17 @@ object Money {
         return cents.longValueExact()
     }
 
+    /** "19.99" -> 1999 puntos base (centésimas de %). Null si inválido o fuera de rango. */
+    fun parsePercentToBp(input: String, minPct: Int = 0, maxPct: Int = 100): Int? {
+        val t = input.trim().replace(" ", "").replace(',', '.')
+        if (t.isEmpty()) return null
+        val bd = try { BigDecimal(t) } catch (e: NumberFormatException) { return null }
+        if (bd.scale() > 2) return null
+        val bp = bd.movePointRight(2)
+        if (bp < BigDecimal(minPct * 100) || bp > BigDecimal(maxPct * 100)) return null
+        return bp.toInt()
+    }
+
     fun toPlain(cents: Long): String =
         BigDecimal(cents).movePointLeft(2).setScale(2).toPlainString()
 

@@ -24,6 +24,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val txs = dao.txs().state(emptyList())
     val budgets = dao.budgets().state(emptyList())
     val goals = dao.goals().state(emptyList())
+    val debts = dao.debts().state(emptyList())
+    val subs = dao.subs().state(emptyList())
 
     var month by mutableStateOf(YearMonth.now())
     var message by mutableStateOf<String?>(null)
@@ -75,4 +77,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteGoal(id: Long) = launchSafe { dao.deleteGoal(id) }
+
+    fun addDebt(d: DebtEntity) = launchSafe { dao.insertDebt(d) }
+    fun deleteDebt(id: Long) = launchSafe { dao.deleteDebt(id) }
+    fun addSub(s: SubEntity) = launchSafe { dao.insertSub(s) }
+    fun deleteSub(id: Long) = launchSafe { dao.deleteSub(id) }
 }
