@@ -32,7 +32,8 @@ data class TxEntity(
 data class BudgetEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val category: String,
-    val limitCents: Long
+    val limitCents: Long,
+    @ColumnInfo(defaultValue = "0") val weekly: Int = 0
 )
 
 @Entity(tableName = "goals")
@@ -72,6 +73,35 @@ data class DebtPaymentEntity(
     val epochDay: Long
 )
 
+@Entity(tableName = "shop_lists")
+data class ShopListEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val budgetCents: Long
+)
+
+@Entity(tableName = "shop_items")
+data class ShopItemEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val listId: Long,
+    val name: String,
+    val quantity: Int,
+    val priceCents: Long,
+    val checked: Boolean
+)
+
+@Entity(tableName = "price_obs")
+data class PriceObsEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val product: String,
+    val store: String,
+    val priceCents: Long,
+    val qty: String,
+    val measure: String,
+    val epochDay: Long,
+    val source: String
+)
+
 @Dao
 interface FinDao {
     @Query("SELECT * FROM accounts ORDER BY id") fun accounts(): Flow<List<AccountEntity>>
@@ -93,6 +123,18 @@ interface FinDao {
     @Query("UPDATE debts SET balanceCents = balanceCents - :cents WHERE id = :id")
     suspend fun reduceDebt(id: Long, cents: Long)
 
+    @Query("SELECT * FROM shop_lists ORDER BY id") fun shopLists(): Flow<List<ShopListEntity>>
+    @Query("SELECT * FROM shop_items ORDER BY id") fun shopItems(): Flow<List<ShopItemEntity>>
+    @Query("SELECT * FROM price_obs ORDER BY epochDay DESC, id DESC") fun priceObs(): Flow<List<PriceObsEntity>>
+    @Insert suspend fun insertShopList(l: ShopListEntity): Long
+    @Insert suspend fun insertShopItem(i: ShopItemEntity): Long
+    @Insert suspend fun insertPriceObs(o: PriceObsEntity): Long
+    @Query("UPDATE shop_items SET checked = :checked WHERE id = :id") suspend fun setChecked(id: Long, checked: Boolean)
+    @Query("DELETE FROM shop_items WHERE id = :id") suspend fun deleteShopItem(id: Long)
+    @Query("DELETE FROM shop_items WHERE listId = :listId") suspend fun deleteItemsOfList(listId: Long)
+    @Query("DELETE FROM shop_lists WHERE id = :id") suspend fun deleteShopList(id: Long)
+    @Query("DELETE FROM price_obs WHERE id = :id") suspend fun deletePriceObs(id: Long)
+
     @Insert suspend fun insertDebt(d: DebtEntity): Long
     @Query("DELETE FROM debts WHERE id = :id") suspend fun deleteDebt(id: Long)
 
@@ -107,8 +149,8 @@ interface FinDao {
 }
 
 @Database(
-    entities = [AccountEntity::class, TxEntity::class, BudgetEntity::class, GoalEntity::class, DebtEntity::class, SubEntity::class, DebtPaymentEntity::class],
-    version = 3,
+    entities = [AccountEntity::class, TxEntity::class, BudgetEntity::class, GoalEntity::class, DebtEntity::class, SubEntity::class, DebtPaymentEntity::class, ShopListEntity::class, ShopItemEntity::class, PriceObsEntity::class],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDb : RoomDatabase() {
@@ -128,10 +170,19 @@ abstract class AppDb : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `budgets` ADD COLUMN `weekly` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `shop_lists` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `budgetCents` INTEGER NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `shop_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `listId` INTEGER NOT NULL, `name` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `priceCents` INTEGER NOT NULL, `checked` INTEGER NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `price_obs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `product` TEXT NOT NULL, `store` TEXT NOT NULL, `priceCents` INTEGER NOT NULL, `qty` TEXT NOT NULL, `measure` TEXT NOT NULL, `epochDay` INTEGER NOT NULL, `source` TEXT NOT NULL)")
+            }
+        }
+
         @Volatile private var instance: AppDb? = null
         fun get(c: Context): AppDb = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(c.applicationContext, AppDb::class.java, "finanzas.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build().also { instance = it }
         }
     }

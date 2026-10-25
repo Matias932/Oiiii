@@ -40,6 +40,13 @@ object Finance {
     fun budgetSpent(txs: List<TxEntity>, category: String, m: YearMonth): Long =
         expensesByCategory(txs, m)[category] ?: 0L
 
+    /** Gasto de la categoría en la semana (lunes a domingo) que contiene `today`. */
+    fun weeklySpent(txs: List<TxEntity>, category: String, today: LocalDate): Long {
+        val start = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).toEpochDay()
+        return txs.filter { it.type == TxType.EXPENSE.name && it.category == category && it.epochDay in start..(start + 6) }
+            .sumOf { it.amountCents }
+    }
+
     fun percentUsed(spent: Long, limit: Long): Long = if (limit <= 0) 0 else spent * 100 / limit
 
     /** Aportación mensual necesaria; null si no hay fecha objetivo. Redondea hacia arriba. */

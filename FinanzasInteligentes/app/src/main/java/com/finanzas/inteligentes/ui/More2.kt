@@ -1,6 +1,11 @@
 package com.finanzas.inteligentes.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.core.content.ContextCompat
+import com.finanzas.inteligentes.data.Reminders
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -218,6 +223,19 @@ fun SettingsScreen(vm: MainViewModel) {
                 }
             } else Text("Huella/rostro no disponible en este dispositivo.", style = MaterialTheme.typography.bodySmall)
         }
+        Text("Recordatorios", style = MaterialTheme.typography.titleMedium)
+        val notif = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+            if (ok) Reminders.enable(ctx) else vm.message = "Sin permiso de notificaciones no se pueden mostrar recordatorios."
+        }
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Switch(AppState.reminders, { on ->
+                if (!on) Reminders.disable(ctx)
+                else if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notif.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else Reminders.enable(ctx)
+            })
+            Text("Avisar de pagos previstos (hoy o mañana)")
+        }
+        Text("Se revisa aproximadamente una vez al día; Android puede retrasar la hora. El aviso no muestra nombres ni montos.", style = MaterialTheme.typography.bodySmall)
         Text("Privacidad", style = MaterialTheme.typography.titleMedium)
         Text("Sus datos se guardan solo en este teléfono. La app no tiene permiso de Internet, por lo que no envía información a ningún servidor.")
         Text("Exportar", style = MaterialTheme.typography.titleMedium)

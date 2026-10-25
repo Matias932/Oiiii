@@ -33,14 +33,14 @@ object Export {
     ): String {
         fun arr(items: List<JSONObject>) = JSONArray().also { a -> items.forEach { a.put(it) } }
         return JSONObject().apply {
-            put("app", "Finanzas Inteligentes"); put("currency", Money.CURRENCY); put("version", 3)
+            put("app", "Finanzas Inteligentes"); put("currency", Money.CURRENCY); put("version", 4)
             put("accounts", arr(accounts.map { JSONObject().put("id", it.id).put("name", it.name).put("openingCents", it.openingCents) }))
             put("transactions", arr(txs.map {
                 JSONObject().put("id", it.id).put("type", it.type).put("amountCents", it.amountCents).put("category", it.category)
                     .put("date", LocalDate.ofEpochDay(it.epochDay).toString()).put("description", it.description)
                     .put("notes", it.notes).put("accountId", it.accountId).put("toAccountId", it.toAccountId ?: JSONObject.NULL)
             }))
-            put("budgets", arr(budgets.map { JSONObject().put("category", it.category).put("limitCents", it.limitCents) }))
+            put("budgets", arr(budgets.map { JSONObject().put("category", it.category).put("limitCents", it.limitCents).put("weekly", it.weekly) }))
             put("goals", arr(goals.map {
                 JSONObject().put("name", it.name).put("targetCents", it.targetCents).put("savedCents", it.savedCents)
                     .put("targetDate", it.targetEpochDay?.let { d -> LocalDate.ofEpochDay(d).toString() } ?: JSONObject.NULL)

@@ -1,4 +1,4 @@
-# Finanzas Inteligentes (etapa 3)
+# Finanzas Inteligentes (etapa 4)
 
 App Android local (Kotlin, Compose, Material 3, Room). Moneda CAD, español, sin conexión ni cuentas bancarias.
 
@@ -8,6 +8,8 @@ Cuentas manuales; ingresos, gastos y transferencias (crear, editar, eliminar con
 Etapa 2 (pestaña «Más»): deudas con simulador avalancha vs. bola de nieve; suscripciones con costo mensual/anual y posibles duplicados; calculadora TPS/TVQ de Quebec (5 % y 9,975 %); simulador de inversión con 3 escenarios, comisión e inflación; comparador de precio por unidad con precios que el usuario escribe. Base de datos en versión 2 con migración (los datos de la etapa 1 se conservan).
 
 Etapa 3: bloqueo con PIN (hash PBKDF2) y huella/rostro opcional, tema claro/oscuro, exportación CSV y JSON, borrado de datos, historial de pagos de deudas, estadísticas de 6 meses, simulador de decisiones, «Gana más» (calculadora), contenido educativo de inversiones con detector de señales de estafa, y próximos pagos en Inicio. Base de datos v3 con migraciones.
+
+Etapa 4: recordatorios locales (WorkManager, sin montos en la notificación), escáner de recibos (OCR en el teléfono con ML Kit; solo comercio, fecha ISO y total, siempre como borrador), listas de compras con presupuesto, historial de precios anotados a mano (mínimo registrado en la app, variación, antigüedad), presupuestos semanales y asistente de preguntas rápidas calculadas localmente (la IA en la nube NO está conectada). Base de datos v4 con migraciones.
 
 ## Pendiente (no implementado)
 Historial de pagos de deudas, calendario/recordatorios, estadísticas avanzadas, escáner de recibos, comparador de precios de tiendas (fuentes reales), listas de compras, asistente IA, «Gana más», contenido educativo de inversiones, simulador de decisiones, finanzas familiares, impuestos sobre ingresos, bloqueo/biometría, exportación y copias de seguridad, selector de fecha y presupuestos semanales.

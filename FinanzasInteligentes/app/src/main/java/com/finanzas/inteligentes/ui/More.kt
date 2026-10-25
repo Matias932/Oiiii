@@ -32,6 +32,10 @@ private val tools = listOf(
     Triple("decision", "Simulador de decisiones", "¿Cómo afecta una compra o un pago mensual a su dinero?"),
     Triple("earn", "Gana más", "Calculadora de ganancia neta y señales de alerta."),
     Triple("learn", "Aprender sobre inversiones", "Conceptos básicos, CELI/REER y cómo detectar estafas."),
+    Triple("assistant", "Asistente (preguntas rápidas)", "Respuestas calculadas con sus datos, sin Internet."),
+    Triple("shop", "Listas de compras", "Listas con presupuesto y costo estimado."),
+    Triple("prices", "Historial de precios", "Anote precios con fecha y vea mínimos y variaciones."),
+    Triple("receipt", "Escáner de recibos", "Lea un recibo desde una foto y cree un borrador de gasto."),
     Triple("settings", "Ajustes y seguridad", "PIN, huella, tema, exportar y borrar datos.")
 )
 
@@ -64,6 +68,10 @@ fun MoreScreen(vm: MainViewModel) {
                 "decision" -> DecisionScreen(vm)
                 "earn" -> EarnScreen()
                 "learn" -> LearnScreen()
+                "assistant" -> AssistantScreen(vm)
+                "shop" -> ShopScreen(vm)
+                "prices" -> PricesScreen(vm)
+                "receipt" -> ReceiptScreen(vm)
                 else -> SettingsScreen(vm)
             }
         }

@@ -370,13 +370,13 @@ fun BudgetScreen(vm: MainViewModel) {
             EmptyState("Sin presupuestos", "Fija un límite mensual por categoría (por ejemplo, Alimentación) y verás cuánto llevas gastado.")
         }
         items(budgets, key = { it.id }) { b ->
-            val spent = Finance.budgetSpent(txs, b.category, vm.month)
+            val spent = if (b.weekly == 1) Finance.weeklySpent(txs, b.category, LocalDate.now()) else Finance.budgetSpent(txs, b.category, vm.month)
             val pct = Finance.percentUsed(spent, b.limitCents)
             val over = spent > b.limitCents
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(b.category, style = MaterialTheme.typography.titleMedium)
+                        Text(b.category + if (b.weekly == 1) " (semanal)" else " (mensual)", style = MaterialTheme.typography.titleMedium)
                         IconButton(onClick = { toDelete = b }) { Icon(Icons.Filled.Delete, contentDescription = "Eliminar") }
                     }
                     LinearProgressIndicator(progress = { (spent.toFloat() / b.limitCents).coerceIn(0f, 1f) }, Modifier.fillMaxWidth())
@@ -397,13 +397,18 @@ fun BudgetScreen(vm: MainViewModel) {
 private fun BudgetDialog(vm: MainViewModel, onClose: () -> Unit) {
     var category by remember { mutableStateOf("") }
     var limit by remember { mutableStateOf("") }
+    var weekly by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     AlertDialog(
-        onDismissRequest = onClose, title = { Text("Nuevo presupuesto mensual") },
+        onDismissRequest = onClose, title = { Text("Nuevo presupuesto") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CategoryField(category, Categories.expense) { category = it }
-                OutlinedTextField(limit, { limit = it }, label = { Text("Límite mensual (CAD)") }, singleLine = true)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(!weekly, { weekly = false }, { Text("Mensual") })
+                    FilterChip(weekly, { weekly = true }, { Text("Semanal") })
+                }
+                OutlinedTextField(limit, { limit = it }, label = { Text("Límite (CAD)") }, singleLine = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -413,7 +418,7 @@ private fun BudgetDialog(vm: MainViewModel, onClose: () -> Unit) {
                 when {
                     category.isBlank() -> error = "Indique una categoría."
                     c == null -> error = "Límite inválido: use un número mayor que 0."
-                    else -> { vm.addBudget(category.trim(), c); onClose() }
+                    else -> { vm.addBudget(category.trim(), c, if (weekly) 1 else 0); onClose() }
                 }
             }) { Text("Crear") }
         },

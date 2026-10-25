@@ -17,6 +17,7 @@ object AppState {
     var locked by mutableStateOf(false)
     var pinSet by mutableStateOf(false)
     var biometric by mutableStateOf(false)
+    var reminders by mutableStateOf(false)
 }
 
 /** El PIN se guarda solo como hash PBKDF2 con sal; nunca en texto. */
@@ -29,6 +30,7 @@ object Security {
         AppState.pinSet = p.contains("pin_hash")
         AppState.biometric = p.getBoolean("biometric", false) && AppState.pinSet
         AppState.locked = AppState.pinSet
+        AppState.reminders = p.getBoolean("reminders", false)
     }
 
     private fun hash(pin: String, salt: ByteArray): ByteArray =
@@ -60,6 +62,11 @@ object Security {
     fun setBiometric(c: Context, on: Boolean) {
         sp(c).edit().putBoolean("biometric", on).apply()
         AppState.biometric = on
+    }
+
+    fun setReminders(c: Context, on: Boolean) {
+        sp(c).edit().putBoolean("reminders", on).apply()
+        AppState.reminders = on
     }
 
     fun setTheme(c: Context, mode: Int) {

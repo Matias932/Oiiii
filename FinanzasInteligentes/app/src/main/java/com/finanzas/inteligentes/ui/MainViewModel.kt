@@ -34,6 +34,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val debts = dao.debts().state(emptyList())
     val subs = dao.subs().state(emptyList())
     val debtPayments = dao.debtPayments().state(emptyList())
+    val shopLists = dao.shopLists().state(emptyList())
+    val shopItems = dao.shopItems().state(emptyList())
+    val priceObs = dao.priceObs().state(emptyList())
 
     var month by mutableStateOf(YearMonth.now())
     var message by mutableStateOf<String?>(null)
@@ -57,12 +60,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteTx(id: Long) = launchSafe { dao.deleteTx(id) }
 
-    fun addBudget(category: String, limitCents: Long) {
-        if (budgets.value.any { it.category.equals(category, ignoreCase = true) }) {
+    fun addBudget(category: String, limitCents: Long, weekly: Int = 0) {
+        if (budgets.value.any { it.category.equals(category, ignoreCase = true) && it.weekly == weekly }) {
             message = "Ya existe un presupuesto para esa categoría."
             return
         }
-        launchSafe { dao.insertBudget(BudgetEntity(category = category, limitCents = limitCents)) }
+        launchSafe { dao.insertBudget(BudgetEntity(category = category, limitCents = limitCents, weekly = weekly)) }
     }
 
     fun deleteBudget(id: Long) = launchSafe { dao.deleteBudget(id) }
@@ -118,4 +121,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) { db.clearAllTables() }
         message = "Datos financieros eliminados."
     }
+
+    fun addShopList(name: String, budgetCents: Long) = launchSafe { dao.insertShopList(ShopListEntity(name = name, budgetCents = budgetCents)) }
+    fun deleteShopList(id: Long) = launchSafe { db.withTransaction { dao.deleteItemsOfList(id); dao.deleteShopList(id) } }
+    fun addShopItem(i: ShopItemEntity) = launchSafe { dao.insertShopItem(i) }
+    fun toggleItem(i: ShopItemEntity) = launchSafe { dao.setChecked(i.id, !i.checked) }
+    fun deleteShopItem(id: Long) = launchSafe { dao.deleteShopItem(id) }
+    fun addPriceObs(o: PriceObsEntity) = launchSafe { dao.insertPriceObs(o) }
+    fun deletePriceObs(id: Long) = launchSafe { dao.deletePriceObs(id) }
 }
