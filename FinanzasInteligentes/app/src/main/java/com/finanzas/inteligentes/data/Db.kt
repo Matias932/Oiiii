@@ -64,6 +64,14 @@ data class SubEntity(
     val notes: String
 )
 
+@Entity(tableName = "debt_payments")
+data class DebtPaymentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val debtId: Long,
+    val amountCents: Long,
+    val epochDay: Long
+)
+
 @Dao
 interface FinDao {
     @Query("SELECT * FROM accounts ORDER BY id") fun accounts(): Flow<List<AccountEntity>>
@@ -80,6 +88,11 @@ interface FinDao {
     @Query("DELETE FROM budgets WHERE id = :id") suspend fun deleteBudget(id: Long)
 
     @Query("SELECT * FROM debts ORDER BY id") fun debts(): Flow<List<DebtEntity>>
+    @Query("SELECT * FROM debt_payments ORDER BY epochDay DESC, id DESC") fun debtPayments(): Flow<List<DebtPaymentEntity>>
+    @Insert suspend fun insertPayment(p: DebtPaymentEntity): Long
+    @Query("UPDATE debts SET balanceCents = balanceCents - :cents WHERE id = :id")
+    suspend fun reduceDebt(id: Long, cents: Long)
+
     @Insert suspend fun insertDebt(d: DebtEntity): Long
     @Query("DELETE FROM debts WHERE id = :id") suspend fun deleteDebt(id: Long)
 
@@ -94,8 +107,8 @@ interface FinDao {
 }
 
 @Database(
-    entities = [AccountEntity::class, TxEntity::class, BudgetEntity::class, GoalEntity::class, DebtEntity::class, SubEntity::class],
-    version = 2,
+    entities = [AccountEntity::class, TxEntity::class, BudgetEntity::class, GoalEntity::class, DebtEntity::class, SubEntity::class, DebtPaymentEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDb : RoomDatabase() {
@@ -109,10 +122,16 @@ abstract class AppDb : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `debt_payments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `debtId` INTEGER NOT NULL, `amountCents` INTEGER NOT NULL, `epochDay` INTEGER NOT NULL)")
+            }
+        }
+
         @Volatile private var instance: AppDb? = null
         fun get(c: Context): AppDb = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(c.applicationContext, AppDb::class.java, "finanzas.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build().also { instance = it }
         }
     }

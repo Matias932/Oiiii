@@ -116,6 +116,7 @@ fun HomeScreen(vm: MainViewModel, onTx: (TxType) -> Unit, onAccount: () -> Unit)
     val accounts by vm.accounts.collectAsState()
     val txs by vm.txs.collectAsState()
     val goals by vm.goals.collectAsState()
+    val subs by vm.subs.collectAsState()
     val m = vm.month
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -153,6 +154,18 @@ fun HomeScreen(vm: MainViewModel, onTx: (TxType) -> Unit, onAccount: () -> Unit)
                     Button(onClick = { onTx(TxType.EXPENSE) }) { Text("+ Gasto") }
                     OutlinedButton(onClick = { onTx(TxType.TRANSFER) }) { Text("Transferir") }
                 }
+            }
+            val today = LocalDate.now().toEpochDay()
+            val upcoming = subs.filter { it.nextEpochDay in today..(today + 30) }.sortedBy { it.nextEpochDay }
+            item { Text("Próximos pagos (30 días)", style = MaterialTheme.typography.titleMedium) }
+            if (upcoming.isEmpty()) item { Text("Sin pagos previstos. Se toman de sus suscripciones registradas.") }
+            else {
+                items(upcoming) { u ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("${LocalDate.ofEpochDay(u.nextEpochDay)} · ${u.name}"); Text(Money.format(u.amountCents))
+                    }
+                }
+                item { Text("Son pagos previstos: no se descuentan hasta que usted los registre como gasto.", style = MaterialTheme.typography.bodySmall) }
             }
             item { Text("Gastos por categoría", style = MaterialTheme.typography.titleMedium) }
             if (byCat.isEmpty()) item { Text("Sin gastos registrados en este mes.") }

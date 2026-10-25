@@ -27,7 +27,12 @@ private val tools = listOf(
     Triple("subs", "Suscripciones", "Costo mensual y anual de pagos periódicos."),
     Triple("tax", "Impuestos de Quebec", "TPS y TVQ: agrega o quita impuestos de un precio."),
     Triple("invest", "Simulador de inversión", "Escenarios hipotéticos con comisiones e inflación."),
-    Triple("unit", "Precio por unidad", "Compara productos por 100 g, 100 ml o unidad.")
+    Triple("unit", "Precio por unidad", "Compara productos por 100 g, 100 ml o unidad."),
+    Triple("stats", "Estadísticas", "Ingresos, gastos y balance de los últimos 6 meses."),
+    Triple("decision", "Simulador de decisiones", "¿Cómo afecta una compra o un pago mensual a su dinero?"),
+    Triple("earn", "Gana más", "Calculadora de ganancia neta y señales de alerta."),
+    Triple("learn", "Aprender sobre inversiones", "Conceptos básicos, CELI/REER y cómo detectar estafas."),
+    Triple("settings", "Ajustes y seguridad", "PIN, huella, tema, exportar y borrar datos.")
 )
 
 @Composable
@@ -54,7 +59,12 @@ fun MoreScreen(vm: MainViewModel) {
                 "subs" -> SubsScreen(vm)
                 "tax" -> TaxScreen()
                 "invest" -> InvestScreen()
-                else -> UnitScreen()
+                "unit" -> UnitScreen()
+                "stats" -> StatsScreen(vm)
+                "decision" -> DecisionScreen(vm)
+                "earn" -> EarnScreen()
+                "learn" -> LearnScreen()
+                else -> SettingsScreen(vm)
             }
         }
     }
@@ -77,6 +87,8 @@ fun DebtScreen(vm: MainViewModel) {
     var add by remember { mutableStateOf(false) }
     var del by remember { mutableStateOf<DebtEntity?>(null) }
     var extra by remember { mutableStateOf("") }
+    val payments by vm.debtPayments.collectAsState()
+    var pay by remember { mutableStateOf<DebtEntity?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Button(onClick = { add = true }) { Text("+ Deuda") } }
         if (debts.isEmpty()) item {
@@ -91,6 +103,9 @@ fun DebtScreen(vm: MainViewModel) {
                     }
                     Text("Saldo ${Money.format(d.balanceCents)} · tasa ${ratePct(d.rateBp)} anual")
                     Text("Pago mínimo mensual ${Money.format(d.minPaymentCents)}")
+                    val pays = payments.filter { it.debtId == d.id }
+                    Text("Pagos registrados: ${pays.size} · total ${Money.format(pays.sumOf { it.amountCents })}")
+                    if (d.balanceCents > 0) OutlinedButton(onClick = { pay = d }) { Text("Registrar pago") }
                 }
             }
         }
@@ -116,6 +131,7 @@ fun DebtScreen(vm: MainViewModel) {
         }
     }
     if (add) DebtDialog(vm) { add = false }
+    pay?.let { d -> PayDialog(vm, d) { pay = null } }
     del?.let { d -> ConfirmDialog("¿Eliminar ${d.name}?", "Esta acción no se puede deshacer.", { vm.deleteDebt(d.id); del = null }) { del = null } }
 }
 
@@ -129,6 +145,29 @@ private fun PlanText(title: String, p: DebtPlan) {
             Text("Orden de liquidación: ${p.payoffOrder.joinToString(" → ")}")
         }
     }
+}
+
+@Composable
+private fun PayDialog(vm: MainViewModel, d: DebtEntity, onClose: () -> Unit) {
+    var amount by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onClose, title = { Text("Pago a ${d.name}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Saldo actual: ${Money.format(d.balanceCents)}. Reduce el saldo de la deuda y queda en el historial; no modifica sus cuentas (registre el gasto aparte si quiere reflejarlo).")
+                OutlinedTextField(amount, { amount = it }, label = { Text("Importe (CAD)") }, singleLine = true)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val c = Money.parseToCents(amount)
+                if (c == null) error = "Importe inválido." else { vm.payDebt(d, c); onClose() }
+            }) { Text("Registrar") }
+        },
+        dismissButton = { TextButton(onClick = onClose) { Text("Cancelar") } }
+    )
 }
 
 @Composable

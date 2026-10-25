@@ -1,6 +1,12 @@
 package com.finanzas.inteligentes.ui
 
 import android.app.Application
+import android.net.Uri
+import androidx.room.withTransaction
+import com.finanzas.inteligentes.data.Export
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,7 +22,8 @@ import kotlinx.coroutines.launch
 import java.time.YearMonth
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
-    private val dao = AppDb.get(app).dao()
+    private val db = AppDb.get(app)
+    private val dao = db.dao()
 
     private fun <T> Flow<T>.state(init: T) = stateIn(viewModelScope, SharingStarted.Eagerly, init)
 
@@ -26,6 +33,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val goals = dao.goals().state(emptyList())
     val debts = dao.debts().state(emptyList())
     val subs = dao.subs().state(emptyList())
+    val debtPayments = dao.debtPayments().state(emptyList())
 
     var month by mutableStateOf(YearMonth.now())
     var message by mutableStateOf<String?>(null)
@@ -82,4 +90,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteDebt(id: Long) = launchSafe { dao.deleteDebt(id) }
     fun addSub(s: SubEntity) = launchSafe { dao.insertSub(s) }
     fun deleteSub(id: Long) = launchSafe { dao.deleteSub(id) }
+
+    fun payDebt(d: DebtEntity, cents: Long) {
+        if (cents > d.balanceCents) { message = "El pago supera el saldo de la deuda."; return }
+        launchSafe {
+            db.withTransaction {
+                dao.reduceDebt(d.id, cents)
+                dao.insertPayment(DebtPaymentEntity(debtId = d.id, amountCents = cents, epochDay = LocalDate.now().toEpochDay()))
+            }
+        }
+    }
+
+    private fun export(uri: Uri, content: () -> String) = launchSafe {
+        withContext(Dispatchers.IO) {
+            val out = getApplication<Application>().contentResolver.openOutputStream(uri) ?: throw IllegalStateException()
+            out.use { it.write(content().toByteArray(Charsets.UTF_8)) }
+        }
+        message = "Archivo guardado."
+    }
+
+    fun exportCsv(uri: Uri) = export(uri) { Export.csv(txs.value, accounts.value) }
+    fun exportJson(uri: Uri) = export(uri) {
+        Export.json(accounts.value, txs.value, budgets.value, goals.value, debts.value, debtPayments.value, subs.value)
+    }
+
+    fun deleteAllData() = launchSafe {
+        withContext(Dispatchers.IO) { db.clearAllTables() }
+        message = "Datos financieros eliminados."
+    }
 }
