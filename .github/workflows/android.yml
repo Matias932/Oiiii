@@ -2,6 +2,9 @@ name: Android CI
 on:
   push:
   workflow_dispatch:
+defaults:
+  run:
+    working-directory: FinanzasInteligentes
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,4 +21,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: finanzas-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: FinanzasInteligentes/app/build/outputs/apk/debug/*.apk
